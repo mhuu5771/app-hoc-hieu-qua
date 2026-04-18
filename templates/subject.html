@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <a href="/" class="btn btn-sm btn-outline-secondary me-3 shadow-sm">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 class="fw-bold mb-0">Lộ trình: {{ subject.name }}</h2>
+        </div>
+
+        {% set total_lessons = subject.lessons|length %}
+        {% set completed_lessons = subject.lessons|selectattr('is_completed', 'equalto', True)|list|length %}
+        {% set total_percent = (completed_lessons / total_lessons * 100)|round|int if total_lessons > 0 else 0 %}
+
+        <div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 15px; background: #fff; border-left: 5px solid #198754 !important;">
+            <div class="row align-items-center">
+                <div class="col-md-9">
+                    <h6 class="fw-bold text-muted small mb-1 uppercase">MỨC ĐỘ THÔNG THẠO MÔN HỌC</h6>
+                    <h3 class="fw-bold text-dark mb-3">
+                        {{ total_percent }}% 
+                        <span class="text-muted small fw-normal">({{ completed_lessons }}/{{ total_lessons }} bài học đã vượt qua bài Test)</span>
+                    </h3>
+                    <div class="progress" style="height: 15px; border-radius: 10px; background-color: #e9ecef;">
+                        <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ total_percent }}%" 
+                             aria-valuenow="{{ total_percent }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center d-none d-md-block border-start">
+                    <div class="display-6 fw-bold text-success">{{ total_percent }}%</div>
+                    <div class="small text-muted fw-bold">HOÀN THÀNH</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            {% for lesson in subject.lessons %}
+            <div class="card mb-4 border-0 shadow-sm" style="border-radius: 15px;">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0 fw-bold {{ 'text-success' if lesson.is_completed else 'text-dark' }}">
+                        {% if lesson.is_completed %}<i class="fas fa-check-circle me-1"></i>{% endif %}
+                        {{ lesson.title }}
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="/lesson/{{ lesson.id }}/manage-quiz" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm">
+                            <i class="fas fa-edit me-1"></i> Soạn Quiz ({{ lesson.quizzes|length }})
+                        </a>
+
+                        {% set tasks_count = lesson.tasks|length %}
+                        {% set done_count = lesson.tasks|selectattr('is_done', 'equalto', True)|list|length %}
+                        
+                        {% if tasks_count > 0 and done_count == tasks_count %}
+                            <a href="/quiz/{{ lesson.id }}" class="btn {{ 'btn-success' if lesson.is_completed else 'btn-primary' }} btn-sm rounded-pill px-3 shadow-sm">
+                                <i class="fas fa-play-circle me-1"></i> {{ 'Làm lại Test' if lesson.is_completed else 'Vào Test' }}
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary btn-sm rounded-pill px-3 shadow-sm" disabled title="Hoàn thành hết nhiệm vụ để mở khóa">
+                                <i class="fas fa-lock me-1"></i> Khóa
+                            </button>
+                        {% endif %}
+
+                        <a href="/lesson/delete/{{ lesson.id }}" class="btn btn-link text-danger p-0 ms-1" onclick="return confirm('Xóa bài này sẽ mất hết dữ liệu bên trong?')">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="list-group list-group-flush mb-3">
+                        {% for t in lesson.tasks %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 border-0 py-2">
+                            <a href="/task/toggle/{{ t.id }}" class="text-decoration-none flex-grow-1">
+                                {% if t.is_done %}
+                                    <i class="fas fa-check-square text-success me-2"></i><del class="text-muted">{{ t.content }}</del>
+                                {% else %}
+                                    <i class="far fa-square text-secondary me-2"></i><span class="text-dark">{{ t.content }}</span>
+                                {% endif %}
+                            </a>
+                            <a href="/task/delete/{{ t.id }}" class="text-danger small ms-3" onclick="return confirm('Xóa nhiệm vụ?')">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <form action="/task/add/{{ lesson.id }}" method="POST" class="input-group">
+                        <input type="text" name="content" class="form-control form-control-sm" placeholder="Thêm bước học tập mới..." required>
+                        <button class="btn btn-outline-primary btn-sm" type="submit">Thêm</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-4 shadow-sm border-0 sticky-top" style="border-radius: 15px; top: 20px;">
+                <h5 class="fw-bold mb-3"><i class="fas fa-plus-circle me-1 text-primary"></i> Bài học mới</h5>
+                <form action="/lesson/add/{{ subject.id }}" method="POST">
+                    <input type="text" name="title" class="form-control mb-3" placeholder="Tên bài (VD: Nhóm Vitamin)" required>
+                    <button class="btn btn-primary w-100 shadow-sm py-2">Lưu bài học</button>
+                </form>
+                
+                <div class="mt-4 p-3 bg-light rounded shadow-xs border-start border-3 border-info small">
+                    <strong class="text-dark d-block mb-1"><i class="fas fa-info-circle"></i> Cơ chế:</strong>
+                    <ul class="text-muted ps-3 mb-0">
+                        <li>Hoàn thành Task để mở Test.</li>
+                        <li>Đạt <b>80% điểm Test</b> để tăng % tiến độ tổng.</li>
+                        <li>Sử dụng "Soạn Quiz" để thêm câu hỏi.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

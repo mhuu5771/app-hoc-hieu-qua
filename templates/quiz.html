@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card p-4 shadow-sm">
+            <h4 class="fw-bold mb-4 text-center">📝 Bài kiểm tra: {{ lesson.title }}</h4>
+            
+            {% if quizzes %}
+            <form method="POST">
+                {% for q in quizzes %}
+                <div class="mb-5 p-3 border rounded">
+                    <h5 class="mb-3 fw-semibold">Câu {{ loop.index }}: {{ q.question }}</h5>
+                    
+                    {% for opt in ['A', 'B', 'C', 'D'] %}
+                    <label class="w-100 mb-2">
+                        <input type="radio" name="q_{{ q.id }}" value="{{ opt }}" class="d-none" required>
+                        <span class="quiz-option">
+                            <span class="fw-bold me-2">{{ opt }}.</span>
+                            {% if opt == 'A' %}{{ q.option_a }}
+                            {% elif opt == 'B' %}{{ q.option_b }}
+                            {% elif opt == 'C' %}{{ q.option_c }}
+                            {% elif opt == 'D' %}{{ q.option_d }}
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary btn-lg w-100 mt-3 shadow">Nộp bài & Xem kết quả</button>
+            </form>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                <h5>Bài học này chưa có câu hỏi trắc nghiệm!</h5>
+                <p class="text-muted">Vui lòng quay lại hoặc thêm câu hỏi vào cơ sở dữ liệu.</p>
+                <a href="/" class="btn btn-secondary">Quay về Dashboard</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* CSS bổ sung để làm đẹp các ô chọn */
+    .quiz-option {
+        display: block;
+        padding: 15px;
+        border: 2px solid #f0f0f0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    input[type="radio"]:checked + .quiz-option {
+        border-color: #4361ee;
+        background-color: #f0f4ff;
+        color: #4361ee;
+    }
+    .quiz-option:hover {
+        background-color: #fafafa;
+    }
+</style>
+{% endblock %}

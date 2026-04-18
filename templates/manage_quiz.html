@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="/subject/{{ lesson.subject_id }}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left"></i> Quay lại lộ trình
+        </a>
+        <h2 class="fw-bold">Quản lý Quiz: <span class="text-primary">{{ lesson.title }}</span></h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card p-4 shadow-sm border-0 mb-4" style="border-radius: 15px; background: #fdfdfd;">
+                <h5 class="fw-bold mb-3"><i class="fas fa-file-csv me-2 text-success"></i>Tải hàng loạt (CSV)</h5>
+                <form action="/lesson/{{ lesson.id }}/upload-quiz" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="file" class="form-control mb-3" accept=".csv" required>
+                    <button type="submit" class="btn btn-success w-100 shadow-sm">
+                        <i class="fas fa-upload me-1"></i> Tải câu hỏi lên
+                    </button>
+                </form>
+                <div class="mt-3 p-2 border rounded bg-white small">
+                    <strong class="d-block mb-1 text-muted">Cấu trúc file mẫu:</strong>
+                    <code>Câu hỏi, Đáp án A, Đáp án B, Đáp án C, Đáp án D, Đáp án đúng</code>
+                    <p class="mt-2 mb-0 text-danger italic">* Lưu ý: Lưu file Excel ở dạng CSV (UTF-8).</p>
+                </div>
+            </div>
+
+            <div class="card p-4 shadow-sm border-0" style="border-radius: 15px;">
+                <h5 class="fw-bold mb-3"><i class="fas fa-keyboard me-2 text-primary"></i>Nhập câu hỏi thủ công</h5>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Câu hỏi</label>
+                        <textarea name="question" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><input type="text" name="a" class="form-control" placeholder="Đáp án A" required></div>
+                        <div class="col-6"><input type="text" name="b" class="form-control" placeholder="Đáp án B" required></div>
+                        <div class="col-6"><input type="text" name="c" class="form-control" placeholder="Đáp án C" required></div>
+                        <div class="col-6"><input type="text" name="d" class="form-control" placeholder="Đáp án D" required></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Đáp án đúng</label>
+                        <select name="correct" class="form-select">
+                            <option value="A">A</option><option value="B">B</option>
+                            <option value="C">C</option><option value="D">D</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2">Lưu câu hỏi</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card p-4 shadow-sm border-0" style="border-radius: 15px;">
+                <h5 class="fw-bold mb-3">Danh sách câu hỏi ({{ quizzes|length }})</h5>
+                <div style="max-height: 600px; overflow-y: auto;">
+                    {% for q in quizzes %}
+                    <div class="border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <p class="fw-bold mb-1">{{ loop.index }}. {{ q.question }}</p>
+                            <a href="/quiz/delete/{{ q.id }}" class="text-danger p-1" onclick="return confirm('Xóa câu này?')">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </div>
+                        <div class="row g-2 small text-muted">
+                            <div class="col-6">A: {{ q.option_a }}</div>
+                            <div class="col-6">B: {{ q.option_b }}</div>
+                            <div class="col-6">C: {{ q.option_c }}</div>
+                            <div class="col-6">D: {{ q.option_d }}</div>
+                        </div>
+                        <div class="mt-1 small fw-bold text-success">Đáp án đúng: {{ q.correct_option }}</div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3 opacity-25"></i>
+                        <p class="text-muted">Chưa có câu hỏi nào. Hãy tải file lên hoặc nhập tay!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

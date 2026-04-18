@@ -1,0 +1,6 @@
+:root { --primary: #4361ee; --bg: #f8f9fa; }
+body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); }
+.card { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+.quiz-option { border: 2px solid #eee; border-radius: 10px; padding: 15px; cursor: pointer; display: block; margin-bottom: 10px; transition: 0.2s; }
+.quiz-option:hover { background: #f0f3ff; border-color: var(--primary); }
+input[type="radio"]:checked + .quiz-option { background: #eef2ff; border-color: var(--primary); font-weight: bold; }

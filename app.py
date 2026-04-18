@@ -8,8 +8,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, User, Subject, Lesson, Quiz, Task
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'hung-phat-id-smart-study-2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///study_smart.db'
+
+# --- CẤU HÌNH BẢO MẬT VÀ DATABASE ---
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'hung-phat-id-smart-study-2026')
+
+# Render sử dụng biến DATABASE_URL cho Postgres. Nếu không có, mặc định dùng SQLite.
+uri = os.environ.get('DATABASE_URL', 'sqlite:///study_smart.db')
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -43,7 +50,7 @@ def dashboard():
     subjects = Subject.query.filter_by(user_id=current_user.id).all()
     return render_template('dashboard.html', subjects=subjects)
 
-@app.route('/subject/add', methods=['GET', 'POST']) # FIX LỖI: Thêm Route tạo môn học
+@app.route('/subject/add', methods=['GET', 'POST'])
 @login_required
 def add_subject():
     if request.method == 'POST':
@@ -66,27 +73,21 @@ def subject_detail(id):
 @login_required
 def delete_subject(id):
     subject = Subject.query.get_or_404(id)
-    
-    # 1. Kiểm tra quyền sở hữu (bảo mật)
     if subject.user_id != current_user.id:
         flash('Bạn không có quyền xóa môn học này!')
         return redirect(url_for('dashboard'))
 
     try:
-        # 2. Xóa sạch dữ liệu con để tránh lỗi Foreign Key
         for lesson in subject.lessons:
             Task.query.filter_by(lesson_id=lesson.id).delete()
             Quiz.query.filter_by(lesson_id=lesson.id).delete()
             db.session.delete(lesson)
-        
-        # 3. Xóa môn học chính
         db.session.delete(subject)
         db.session.commit()
-        flash(f'Đã xóa môn học "{subject.name}" thành công!')
+        flash(f'Đã xóa môn học "{subject.name}"!')
     except Exception as e:
         db.session.rollback()
-        flash(f'Lỗi khi xóa môn học: {str(e)}')
-        
+        flash(f'Lỗi khi xóa: {str(e)}')
     return redirect(url_for('dashboard'))
 
 # --- QUẢN LÝ BÀI HỌC (LESSON) ---
@@ -98,7 +99,6 @@ def add_lesson(subject_id):
         new_l = Lesson(title=title, subject_id=subject_id)
         db.session.add(new_l)
         db.session.commit()
-        # Tạo nhiệm vụ mặc định
         db.session.add(Task(content="Nghiên cứu tài liệu bài học", lesson_id=new_l.id))
         db.session.commit()
         flash('Thêm bài học thành công!')
@@ -109,7 +109,6 @@ def add_lesson(subject_id):
 def delete_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     sid = lesson.subject_id
-    # Xóa sạch data liên quan trước khi xóa lesson
     Task.query.filter_by(lesson_id=lesson_id).delete()
     Quiz.query.filter_by(lesson_id=lesson_id).delete()
     db.session.delete(lesson)
@@ -136,6 +135,15 @@ def toggle_task(task_id):
     db.session.commit()
     return redirect(url_for('subject_detail', id=task.lesson.subject_id))
 
+@app.route('/task/delete/<int:task_id>')
+@login_required
+def delete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    sid = task.lesson.subject_id
+    db.session.delete(task)
+    db.session.commit()
+    return redirect(url_for('subject_detail', id=sid))
+
 # --- QUẢN LÝ CÂU HỎI (QUIZ) ---
 @app.route('/lesson/<int:lesson_id>/manage-quiz', methods=['GET', 'POST'])
 @login_required
@@ -153,7 +161,6 @@ def manage_quiz(lesson_id):
         )
         db.session.add(new_q)
         db.session.commit()
-        flash('Đã thêm câu hỏi!')
         return redirect(url_for('manage_quiz', lesson_id=lesson_id))
     quizzes = Quiz.query.filter_by(lesson_id=lesson_id).all()
     return render_template('manage_quiz.html', lesson=lesson, quizzes=quizzes)
@@ -163,21 +170,17 @@ def manage_quiz(lesson_id):
 def upload_quiz(lesson_id):
     file = request.files.get('file')
     if file and file.filename.endswith('.csv'):
-        try:
-            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-            csv_input = csv.reader(stream)
-            next(csv_input) # Skip header
-            for row in csv_input:
-                if len(row) >= 6:
-                    db.session.add(Quiz(
-                        lesson_id=lesson_id, question=row[0], 
-                        option_a=row[1], option_b=row[2], option_c=row[3], 
-                        option_d=row[4], correct_option=row[5].strip().upper()
-                    ))
-            db.session.commit()
-            flash('Tải lên CSV thành công!')
-        except Exception as e:
-            flash(f'Lỗi file CSV: {e}')
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.reader(stream)
+        next(csv_input)
+        for row in csv_input:
+            if len(row) >= 6:
+                db.session.add(Quiz(
+                    lesson_id=lesson_id, question=row[0], 
+                    option_a=row[1], option_b=row[2], option_c=row[3], 
+                    option_d=row[4], correct_option=row[5].strip().upper()
+                ))
+        db.session.commit()
     return redirect(url_for('manage_quiz', lesson_id=lesson_id))
 
 @app.route('/quiz/<int:lesson_id>', methods=['GET', 'POST'])
@@ -194,25 +197,10 @@ def quiz(lesson_id):
         return render_template('result.html', score=score, lesson=lesson)
     return render_template('quiz.html', lesson=lesson, quizzes=quizzes)
 
-@app.route('/task/delete/<int:task_id>')
-@login_required
-def delete_task(task_id):
-    # Tìm task cần xóa
-    task = Task.query.get_or_404(task_id)
-    # Lưu lại ID của môn học để quay về trang cũ sau khi xóa
-    subject_id = task.lesson.subject_id
-    
-    try:
-        db.session.delete(task)
-        db.session.commit()
-        flash('Đã xóa nhiệm vụ thành công!')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Lỗi khi xóa: {str(e)}')
-        
-    return redirect(url_for('subject_detail', id=subject_id))
-
+# --- KHỞI CHẠY ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    # Lấy port từ Render hoặc mặc định là 5000
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host='0.0.0.0', port=port, debug=False)

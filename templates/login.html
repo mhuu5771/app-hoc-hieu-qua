@@ -1,14 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="row justify-content-center mt-5">
-    <div class="col-md-4 card p-4">
-        <h3 class="text-center fw-bold mb-4">ĐĂNG NHẬP</h3>
-        <form method="POST">
-            <input type="text" name="username" class="form-control mb-3" placeholder="Username" required>
-            <input type="password" name="password" class="form-control mb-3" placeholder="Mật khẩu" required>
-            <button class="btn btn-primary w-100">Đăng nhập</button>
-            <p class="text-center mt-3">Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
-        </form>
+    <div class="col-md-5">
+        <div class="card p-4 shadow-lg" style="border-radius: 15px;">
+            <h3 class="text-center fw-bold mb-4 text-primary">ĐĂNG NHẬP</h3>
+            
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Tên đăng nhập</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
+                        <input type="text" name="username" class="form-control bg-light" placeholder="Nhập username" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase">Mật khẩu</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-lock text-muted"></i></span>
+                        <input type="password" name="password" class="form-control bg-light" placeholder="Nhập mật khẩu" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow">
+                    ĐĂNG NHẬP NGAY
+                </button>
+                
+                <div class="text-center mt-4">
+                    <p class="mb-0 small text-muted">
+                        Chưa có tài khoản? 
+                        <a href="{{ url_for('register') }}" class="fw-bold text-decoration-none text-primary">Đăng ký ngay</a>
+                    </p>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
